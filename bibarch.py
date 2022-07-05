@@ -400,4 +400,4 @@ def read_histo(runs, category, group, name, use_time=True):
             bibarch_reader.read()
         x_data = np.concatenate((x_data, bibarch_reader['HORLOGE', g_x, n_x]))
         y_data = np.concatenate((y_data, bibarch_reader[category, group, name]))
-    return x_data[::10], y_data[::10]
+    return x_data, y_data
