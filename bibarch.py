@@ -385,7 +385,7 @@ class BibarchReader:
                 print(tab, tab, *[repr(k) for k in self[i, j]])
 
 
-def read_histo(runs, category, group, name, use_time=True):
+def read_histo(runs, category, group, name, use_time=False):
     x_data = np.array([])
     y_data = np.array([])
     g_x, n_x = ('DATES', 'Temps') if use_time else ('CYCLES', 'Ncycle')
