@@ -271,7 +271,7 @@ class SpherePlotter(Plotter):
         coords[-1, 0] = 0
         np.save(out_file, coords)
 
-    def register_ray(self, filename, angles, colors=None, label='', flag_grad=False, ls=0, ms=1):
+    def register_ray(self, filename, angles, colors=None, label='', flag_grad=False, ls=0, marker=1):
         """
         Plot a value on a list of rays
 
@@ -281,7 +281,7 @@ class SpherePlotter(Plotter):
         :param str label: label for the legend
         :param bool flag_grad: flag to plot the gradient along the ray
         :param int ls: line style (see Paraview)
-        :param int ms: marker style (see Paraview)
+        :param int marker: marker style (see Paraview)
         """
 
         if self.ray is None:
@@ -318,17 +318,17 @@ class SpherePlotter(Plotter):
                      SeriesLabel=[self.ray + ' (2)', label, 'Gradients_Magnitude (2)', label_grad],
                      SeriesPlotCorner=['Gradients_Magnitude (2)', '1'],
                      SeriesLineStyle=[self.ray + ' (2)', str(ls)],
-                     SeriesMarkerStyle=[self.ray + ' (2)', str(ms)],
+                     SeriesMarkerStyle=[self.ray + ' (2)', str(marker)],
                      SeriesMarkerSize=[self.ray + ' (2)', '10'])
 
-    def register_surface(self, filename, color=None, ls=0, ms=2, label=''):
+    def register_surface(self, filename, color=None, ls=0, marker=2, label=''):
         """
         Plot a value on the sphere surface
 
         :param str filename: case path
         :param str color: marker color
         :param int ls: line style (see Paraview)
-        :param int ms: marker style (see Paraview)
+        :param int marker: marker style (see Paraview)
         :param str label: label for the legend
         """
         reader, _, _ = self.load_data(filename, [self.surface])
@@ -362,7 +362,7 @@ class SpherePlotter(Plotter):
                          SeriesLabel=[name, label],
                          SeriesColor=[name, *self.str_color(color)],
                          SeriesLineStyle=[name, str(ls)],
-                         SeriesMarkerStyle=[name, str(ms)],
+                         SeriesMarkerStyle=[name, str(marker)],
                          SeriesMarkerSize=[name, '10'])
                 break
         if name is None:
