@@ -5,17 +5,15 @@ import matplotlib.pyplot as plt
 import bibarch
 
 TAG = ('RESIDUS', 'MOYENS', 'RhoEtot')
-# TAG = ('SCHEMA NUM', 'DTLOC', 'Reduc. max')
+ROOT = "/scratchm/pseize/SPHERE_LOBB"
+
+
+def cread(names):
+    names = names if isinstance(names, (list, tuple)) else [names]
+    return bibarch.read_histo([os.path.join(ROOT, name) for name in names], *TAG)
+
 
 if __name__ == '__main__':
-    def cread(names):
-        root = "/scratchm/pseize/SPHERE_LOBB"
-        # root = "/scratchm/pseize/CYLINDRE_LOBB"
-
-        names = names if isinstance(names, (list, tuple)) else [names]
-        return bibarch.read_histo([os.path.join(root, name) for name in names], *TAG)
-
-
     fig = plt.figure(figsize=[12, 9.41 * 2 / 3])
     ax = fig.add_subplot(111)
     ax.grid(True)

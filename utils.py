@@ -5,22 +5,19 @@ import subprocess
 
 import dateutil.parser
 
-TMP_DIR = os.path.join("/tmp_user",
-                       os.environ.get('HOSTNAME', os.environ.get('HOST', '')),
-                       os.environ.get('USERNAME', os.environ.get('USER', '')))
+import config
 
 
 def fetch_file(filename):
     if glob.glob(filename):
         return glob.glob(filename)
 
-    tmp_filename = os.path.normpath(TMP_DIR + os.path.sep + filename)
+    tmp_filename = os.path.normpath(config.TMP_DIR + os.path.sep + filename)
     if not glob.glob(tmp_filename):
         tmp_root = os.path.dirname(tmp_filename)
         os.makedirs(tmp_root, exist_ok=True)
         found = False
-        hosts = ('spiro-cedre', 'sator')
-        for h in hosts:
+        for h in config.HOSTS:
             print("\rLoading {0} from {1}".format(filename, h), end='', flush=True)
             if not subprocess.run(['scp', '{0}:{1}'.format(h, filename), tmp_root],
                                   stderr=subprocess.DEVNULL).returncode:
@@ -28,7 +25,8 @@ def fetch_file(filename):
                 break
         if not found:
             print('\r', end='', flush=True)
-            raise FileNotFoundError("Cannot find {0} on ld, spiro or sator".format(filename))
+            raise FileNotFoundError("Cannot find {0} on {1} or {2}"
+                                    .format(filename, ', '.join(('localhost', *config.HOSTS[:-1])), config.HOSTS[-1]))
         print()
 
     return glob.glob(tmp_filename)
