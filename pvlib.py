@@ -84,10 +84,6 @@ class Plotter:
         if block:
             pvs.Interact()
 
-        views = pvs.GetViews()
-        for i in range(len(views)):
-            pvs.SaveScreenshot("/d/pseize/{0}.png".format(i), views[i])
-
     @staticmethod
     def scale_display(display):
         """
