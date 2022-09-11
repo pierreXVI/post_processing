@@ -107,7 +107,11 @@ class Plotter:
         :param bool progress: shows the time as a progression bar
         """
         if time:
-            pvs.Show(pvs.AnnotateTimeFilter(inp, Format="Time: %g"), view, Interactivity=1)
+            if pvs.GetParaViewVersion().GetVersion() == 5.1:
+                fmt = "Time: {time:f}"
+            else:
+                fmt = "Time: %g"
+            pvs.Show(pvs.AnnotateTimeFilter(inp, Format=fmt), view, Interactivity=1)
         if progress:
             pvs.Show(pvs.TimeStepProgressBar(inp), view)
 
