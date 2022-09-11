@@ -204,12 +204,13 @@ class SpherePlotter(Plotter):
         self.surface = surface_array
         self.r = radius
 
-    def register_plot(self, filename, cell_array, view_size=(400, 400), stream=False, shock=False):
+    def register_plot(self, filename, cell_array, component='', view_size=(400, 400), stream=False, shock=False):
         """
         Displays a field for the case
 
         :param str filename: case path
         :param str cell_array: value to display
+        :param str component: value component for vector arrays
         :param tuple(int, int) view_size:
         :param bool stream: flag to show streamlines
         :param bool shock: flag to show the shock
@@ -217,6 +218,8 @@ class SpherePlotter(Plotter):
         reader, render_view, _ = self.load_data(filename, [cell_array, 'V'] if stream else [cell_array],
                                                 render_view=True, rvs=view_size)
         reader_display = pvs.Show(reader, render_view, Representation='Surface', ColorArrayName=['CELLS', cell_array])
+        if component:
+            pvs.ColorBy(reader_display, ('CELLS', cell_array, component))
         reader_display.SetScalarBarVisibility(render_view, True)
         self.scale_display(reader_display)
 
