@@ -107,10 +107,10 @@ class Plotter:
         :param bool progress: shows the time as a progression bar
         """
         if time:
-            if pvs.GetParaViewVersion().GetVersion() == 5.1:
-                fmt = "Time: {time:f}"
-            else:
+            if pvs.GetParaViewVersion().GetVersion() == 5.9:
                 fmt = "Time: %g"
+            else:
+                fmt = "Time: {time:f}"
             pvs.Show(pvs.AnnotateTimeFilter(inp, Format=fmt), view, Interactivity=1)
         if progress:
             pvs.Show(pvs.TimeStepProgressBar(inp), view)
@@ -236,13 +236,16 @@ class SpherePlotter(Plotter):
                 plot = pvs.PlotOnIntersectionCurves(c2p, SliceType='Plane')
                 plot.SliceType.Normal = [np.sin(np.deg2rad(theta)), np.cos(np.deg2rad(theta)), 0]
                 plot.SliceType.Offset = 1e-6 if theta == 0 else -1e-6 if theta == 90 else 0
-                grad = pvs.GradientOfUnstructuredDataSet(plot, ScalarArray=['POINTS', cell_array])
+                if pvs.GetParaViewVersion().GetVersion() == 5.9:
+                    grad = pvs.GradientOfUnstructuredDataSet(plot, ScalarArray=['POINTS', cell_array],
+                                                             ResultArrayName="Gradients")
+                else:
+                    grad = pvs.Gradient(plot, ScalarArray=['POINTS', cell_array], ResultArrayName="Gradients")
                 pvs.QuerySelect(QueryString='(mag(Gradients)  == max(mag(Gradients)))', FieldType='POINT')
                 selection = pvs.ExtractSelection(grad)
                 selection.UpdatePipeline()
                 xmin, xmax, ymin, ymax, zmin, zmax = selection.GetDataInformation().DataInformation.GetBounds()
                 coords += [xmax, ymax, zmax]
-                # print('[{0}, {1}],'.format(xmax, ymax))
             spline = pvs.SplineSource(ParametricFunction='Spline')
             spline.ParametricFunction.Points = coords
             pvs.Show(spline, render_view)
