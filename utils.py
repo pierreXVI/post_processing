@@ -43,21 +43,26 @@ def insert_repeat(collection_in, *args):
 
 
 def fetch_slurm_stats(slurm_out):
+    """ Returns total run time in seconds and node list """
+    cedre_time = 0
     with open(slurm_out) as file:
         for line in file:
             if "SLURM_JOB_NODELIST" in line:
                 node_list = line.split()[2]
             elif 'NodeList' in line:
                 node_list = line.split('=')[1]
-            elif "Job started at" in line:
-                start = dateutil.parser.parse(line.split()[3])
-            elif "StartTime" in line:
-                start = dateutil.parser.parse(line.split('=')[1])
-            elif "Job ended at" in line:
-                end = dateutil.parser.parse(line.split()[3])
-            elif "EndTime" in line:
-                end = dateutil.parser.parse(line.split('=')[1])
-    return (end - start).total_seconds(), node_list
+            # elif "Job started at" in line:
+            #     start = dateutil.parser.parse(line.split()[3])
+            # elif "StartTime" in line:
+            #     start = dateutil.parser.parse(line.split('=')[1])
+            # elif "Job ended at" in line:
+            #     end = dateutil.parser.parse(line.split()[3])
+            # elif "EndTime" in line:
+            #     end = dateutil.parser.parse(line.split('=')[1])
+            elif "cedre.f90 : CALCUL cedre (SORTIE)" in line:
+                cedre_time = max(cedre_time, float(line.split('=')[-1]))
+    return cedre_time, node_list
+    # return (end - start).total_seconds(), node_list
 
 
 class Counter:
