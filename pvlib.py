@@ -327,7 +327,7 @@ class SpherePlotter(Plotter):
                      SeriesMarkerStyle=[self.ray + ' (2)', str(marker)],
                      SeriesMarkerSize=[self.ray + ' (2)', '10'])
 
-    def register_surface(self, filename, color=None, ls=0, marker=2, label=''):
+    def register_surface(self, filename, color=None, ls=0, marker=2, label='', sphere_label='SPHERE'):
         """
         Plot a value on the sphere surface
 
@@ -336,6 +336,7 @@ class SpherePlotter(Plotter):
         :param int ls: line style (see Paraview)
         :param int marker: marker style (see Paraview)
         :param str label: label for the legend
+        :param str sphere_label: label name of the wall boundary condition
         """
         reader, _, _ = self.load_data(filename, [self.surface])
         c2p = pvs.CellDatatoPointData(reader, ProcessAllArrays=0, CellDataArraytoprocess=[self.surface])
@@ -356,11 +357,16 @@ class SpherePlotter(Plotter):
             self.annotate_time(reader, self.surface_view, self.time, False)
 
         plot.UpdatePipeline()
-        info = plot.GetDataInformation().DataInformation.GetCompositeDataInformation()
+        if pvs.GetParaViewVersion().GetVersion() == 5.9:
+            info = plot.GetDataInformation().GetCompositeDataInformation()
+            names = [info.GetName(i) for i in range(info.GetNumberOfChildren())]
+        else:
+            info = plot.GetDataInformation()
+            names = [info.GetBlockName(i + 1) for i in range(info.GetNumberOfDataSets())]
         name = None
-        for i in range(info.GetNumberOfChildren()):
-            if 'SPHERE' in info.GetName(i):
-                name = '{0} ({1})'.format(self.surface, info.GetName(i))
+        for i in range(len(names)):
+            if sphere_label in names[i]:
+                name = '{0} ({1})'.format(self.surface, names[i])
                 pvs.Show(plot, self.surface_view,
                          UseIndexForXAxis=0, XArrayName=x_array_name,
                          CompositeDataSetIndex=[i + 1],
