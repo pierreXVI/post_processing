@@ -1,3 +1,3 @@
-TMP_DIR = '/tmp'
+TMP_DIR = './tmp'
 
-HOSTS = ('spiro-cedre', 'sator')
+HOSTS = ('spiro-commun', 'sator', 'jeep')
