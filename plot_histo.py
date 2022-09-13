@@ -38,6 +38,18 @@ class Creader:
                                                 use_time=MODE == 'TIME')
         return x_data, y_data
 
+    @staticmethod
+    def reset_offset(names):
+        names = names if isinstance(names, (list, tuple)) else [names]
+
+        Creader.offset = 0
+        for name in names:
+            t = utils.fetch_slurm_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'slurm.*.out')))[0]
+            x, y = bibarch.read_histo(os.path.join(ROOT, name), *TAG)
+            x = t * (x - x[0]) / (x[-1] - x[0]) + Creader.offset
+            x += (x[1] - x[0])
+            Creader.offset = x[-1]
+
 
 def cread(*args, **kwargs):
     return Creader()(*args, **kwargs)
