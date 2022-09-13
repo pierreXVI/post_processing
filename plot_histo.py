@@ -24,7 +24,7 @@ class Creader:
             y_data = np.array([])
             offset = Creader.offset
             for name in names:
-                t = utils.fetch_slurm_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'slurm.*.out')))[0]
+                t = utils.fetch_suivi_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'suivi.1')))
                 x, y = bibarch.read_histo(os.path.join(ROOT, name), *TAG)
                 x = t * (x - x[0]) / (x[-1] - x[0]) + offset
                 x += (x[1] - x[0])
