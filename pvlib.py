@@ -60,7 +60,7 @@ class Plotter:
         if render_view and r_view is None:
             r_view = self.create_view(pvs.CreateRenderView, InteractionMode='2D', ViewSize=rvs)
         if line_view and l_view is None:
-            l_view = self.create_view(pvs.CreateXYPlotView, ViewSize=lvs, BottomAxisTitle='$r$')
+            l_view = self.create_view(pvs.CreateXYPlotView, ViewSize=lvs)
 
         self.data[filename] = reader, r_view, l_view
         return self.data[filename]
