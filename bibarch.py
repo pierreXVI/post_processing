@@ -388,6 +388,7 @@ class BibarchReader:
 def read_histo(runs, category, group, name, use_time=False):
     x_data = np.array([])
     y_data = np.array([])
+    lengths = []
     g_x, n_x = ('DATES', 'Temps') if use_time else ('CYCLES', 'Ncycle')
     runs = runs if isinstance(runs, (list, tuple)) else [runs]
 
@@ -400,4 +401,8 @@ def read_histo(runs, category, group, name, use_time=False):
             bibarch_reader.read()
         x_data = np.concatenate((x_data, bibarch_reader['HORLOGE', g_x, n_x]))
         y_data = np.concatenate((y_data, bibarch_reader[category, group, name]))
-    return x_data, y_data
+        lengths.append(len(x_data))
+    mask = np.zeros_like(x_data, dtype=bool)
+    for length in lengths[:-1]:
+        mask[length] = 1
+    return np.ma.array(x_data, mask=mask), y_data
