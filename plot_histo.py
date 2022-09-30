@@ -41,6 +41,13 @@ class Creader:
     offset = 0
 
     @staticmethod
+    def _get_wall_time(name):
+        t = utils.fetch_suivi_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'suivi.1')))
+        if t is None:
+            t = utils.fetch_slurm_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'slurm.*.out')))[0]
+        return t
+
+    @staticmethod
     def __call__(names, save_offset=False):
         names = names if isinstance(names, (list, tuple)) else [names]
 
@@ -49,10 +56,7 @@ class Creader:
             lengths = [0, *np.flatnonzero(x_data.mask), len(x_data)]
             offset = Creader.offset
             for i in range(len(names)):
-                t = utils.fetch_suivi_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, names[i]), 'suivi.1')))
-                if t is None:
-                    t = utils.fetch_slurm_stats(
-                        *utils.fetch_file(os.path.join(os.path.join(ROOT, names[i]), 'slurm.*.out')))[0]
+                t = Creader._get_wall_time(names[i])
                 x = x_data.data[lengths[i]:lengths[i + 1]]
                 x = t * (x + x[1] - 2 * x[0]) / (x[-1] + x[1] - 2 * x[0]) + offset
                 offset = x[-1]
@@ -70,7 +74,7 @@ class Creader:
 
         Creader.offset = 0
         for name in names:
-            t = utils.fetch_slurm_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'slurm.*.out')))[0]
+            t = Creader._get_wall_time(name)
             x, y = bibarch.read_histo(os.path.join(ROOT, name), *TAG)
             x = t * (x - x[0]) / (x[-1] - x[0]) + Creader.offset
             x += (x[1] - x[0])
