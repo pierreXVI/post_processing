@@ -32,7 +32,7 @@ TREE = {
                             'RhoF3:P1:O2v_EvF3:P1:O2v', 'Rhoe_Ee', 'RhoEtot']},
     'SCHEMA NUM': {'DTLOC': ['Dtloc min', 'Dtloc max', 'Niter max', 'Niter min', 'Reduc. max', 'Reduc. min']}}
 TAG = ('RESIDUS', 'MOYENS', 'RhoEtot')
-ROOT = "/scratchm/pseize/SPHERE_LOBB"
+ROOT = "/scratchm/pseize/SPHERE_LOBB_MTE"
 
 MODE = ('ITER', 'TIME', 'WALL')[2]
 
@@ -45,19 +45,18 @@ class Creader:
         names = names if isinstance(names, (list, tuple)) else [names]
 
         if MODE == 'WALL':
-            x_data = np.array([])
-            y_data = np.array([])
+            x_data, y_data = bibarch.read_histo([os.path.join(ROOT, name) for name in names], *TAG)
+            lengths = [0, *np.flatnonzero(x_data.mask), len(x_data)]
             offset = Creader.offset
-            for name in names:
-                t = utils.fetch_suivi_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'suivi.1')))
+            for i in range(len(names)):
+                t = utils.fetch_suivi_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, names[i]), 'suivi.1')))
                 if t is None:
-                    t = utils.fetch_slurm_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'slurm.*.out')))[0]
-                x, y = bibarch.read_histo(os.path.join(ROOT, name), *TAG)
-                x = t * (x - x[0]) / (x[-1] - x[0]) + offset
-                x += (x[1] - x[0])
+                    t = utils.fetch_slurm_stats(
+                        *utils.fetch_file(os.path.join(os.path.join(ROOT, names[i]), 'slurm.*.out')))[0]
+                x = x_data.data[lengths[i]:lengths[i + 1]]
+                x = t * (x + x[1] - 2 * x[0]) / (x[-1] + x[1] - 2 * x[0]) + offset
                 offset = x[-1]
-                x_data = np.concatenate((x_data, x))
-                y_data = np.concatenate((y_data, y))
+                x_data.data[lengths[i]:lengths[i + 1]] = x
             if save_offset:
                 Creader.offset = offset
         else:
@@ -78,8 +77,10 @@ class Creader:
             Creader.offset = x[-1]
 
 
-def cread(*args, **kwargs):
-    return Creader()(*args, **kwargs)
+def plot_case(case, *args, save_offset=False, **kwargs):
+    x, y = Creader()(case, save_offset=save_offset)
+    ax.plot(x.data, y, *args, **kwargs)
+    ax.plot(x[x.mask].data, y[x.mask], 'k|', ms=10, mew=3)
 
 
 if __name__ == '__main__':
