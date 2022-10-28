@@ -60,6 +60,9 @@ class HPlotter:
         self._ax.plot(x, y, *args, **kwargs)
         self._ax.plot(x[restarts], y[restarts], 'k|', ms=10, mew=3)
 
+    def change_root(self, new_root):
+        self._root = new_root
+
 
 if __name__ == '__main__':
     fig = plt.figure(figsize=[12, 9.41 * 2 / 3])
