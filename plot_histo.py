@@ -1,90 +1,62 @@
 import os.path
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 import bibarch
 import utils
 
-TREE = {
-    'HORLOGE': {'DATES': ['Temps', ],
-                'CYCLES': ['Ncycle', ]},
-    'ETATS': {'MINIMA': ['P', 'T', 'V_x', 'V_y', 'V_z', 'Y_F1:P1:N2tr', 'Y_F1:P1:O2tr', 'Y_F1:P1:NO', 'Y_F1:P1:N',
-                         'Y_F1:P1:O', 'Y_F1:P1:N2p', 'Y_F1:P1:O2p', 'Y_F1:P1:NOp', 'Y_F1:P1:Np', 'Y_F1:P1:Op',
-                         'Y_F4:P1:e', 'Tv_F2:P1:N2v', 'Tv_F3:P1:O2v', 'Te', 'Pe'],
-              'MAXIMA': ['P', 'T', 'V_x', 'V_y', 'V_z', 'Y_F1:P1:N2tr', 'Y_F1:P1:O2tr', 'Y_F1:P1:NO', 'Y_F1:P1:N',
-                         'Y_F1:P1:O', 'Y_F1:P1:N2p', 'Y_F1:P1:O2p', 'Y_F1:P1:NOp', 'Y_F1:P1:Np', 'Y_F1:P1:Op',
-                         'Y_F4:P1:e', 'Tv_F2:P1:N2v', 'Tv_F3:P1:O2v', 'Te', 'Pe'],
-              'MOYENS': ['P', 'T', 'V_x', 'V_y', 'V_z', 'Y_F1:P1:N2tr', 'Y_F1:P1:O2tr', 'Y_F1:P1:NO', 'Y_F1:P1:N',
-                         'Y_F1:P1:O', 'Y_F1:P1:N2p', 'Y_F1:P1:O2p', 'Y_F1:P1:NOp', 'Y_F1:P1:Np', 'Y_F1:P1:Op',
-                         'Y_F4:P1:e', 'Tv_F2:P1:N2v', 'Tv_F3:P1:O2v', 'Te', 'Pe']},
-    'RESIDUS': {'MAXIMA': ['RhoY_F1:P1:N2tr', 'RhoY_F1:P1:O2tr', 'RhoY_F1:P1:NO', 'RhoY_F1:P1:N', 'RhoY_F1:P1:O',
-                           'RhoY_F1:P1:N2p', 'RhoY_F1:P1:O2p', 'RhoY_F1:P1:NOp', 'RhoY_F1:P1:Np', 'RhoY_F1:P1:Op',
-                           'RhoY_F4:P1:e', 'RhoV_x', 'RhoV_y', 'RhoV_z', 'RhoF2:P1:N2v_EvF2:P1:N2v',
-                           'RhoF3:P1:O2v_EvF3:P1:O2v', 'Rhoe_Ee', 'RhoEtot'],
-                'MOYENS': ['RhoY_F1:P1:N2tr', 'RhoY_F1:P1:O2tr', 'RhoY_F1:P1:NO', 'RhoY_F1:P1:N', 'RhoY_F1:P1:O',
-                           'RhoY_F1:P1:N2p', 'RhoY_F1:P1:O2p', 'RhoY_F1:P1:NOp', 'RhoY_F1:P1:Np', 'RhoY_F1:P1:Op',
-                           'RhoY_F4:P1:e', 'RhoV_x', 'RhoV_y', 'RhoV_z', 'RhoF2:P1:N2v_EvF2:P1:N2v',
-                           'RhoF3:P1:O2v_EvF3:P1:O2v', 'Rhoe_Ee', 'RhoEtot'],
-                'GLOBAUX': ['RhoY_F1:P1:N2tr', 'RhoY_F1:P1:O2tr', 'RhoY_F1:P1:NO', 'RhoY_F1:P1:N', 'RhoY_F1:P1:O',
-                            'RhoY_F1:P1:N2p', 'RhoY_F1:P1:O2p', 'RhoY_F1:P1:NOp', 'RhoY_F1:P1:Np', 'RhoY_F1:P1:Op',
-                            'RhoY_F4:P1:e', 'RhoV_x', 'RhoV_y', 'RhoV_z', 'RhoF2:P1:N2v_EvF2:P1:N2v',
-                            'RhoF3:P1:O2v_EvF3:P1:O2v', 'Rhoe_Ee', 'RhoEtot']},
-    'SCHEMA NUM': {'DTLOC': ['Dtloc min', 'Dtloc max', 'Niter max', 'Niter min', 'Reduc. max', 'Reduc. min']}}
-TAG = ('RESIDUS', 'MOYENS', 'RhoEtot')
-ROOT = "/scratchm/pseize/SPHERE_LOBB_MTE"
 
-MODE = ('ITER', 'TIME', 'WALL')[2]
+class HPlotter:
 
+    def __init__(self, axis, tags, mode='ITER', root=''):
+        """
 
-class Creader:
-    offset = 0
+        :param matplotlib.axis._axis.Axis axis:
+        :param str mode: 'ITER', 'TIME' or 'WALL'
+        :param str root: path to prepend to case files
+        :param tuple(str, str, str) tags:
+        """
 
-    @staticmethod
-    def _get_wall_time(name):
-        t = utils.fetch_suivi_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'suivi.1')))
+        self._tags = tags
+        self._mode = mode
+        self._root = root
+
+        self._ax = axis
+        self._ax.set_xlabel({'ITER': 'Iteration number', 'TIME': 'Simulation time', 'WALL': 'Wall time'}[self._mode])
+        self._ax.set_title(' '.join(self._tags))
+
+        self._offset = 0
+
+    def get_wall_time(self, name):
+        file, = utils.fetch_file(os.path.join(os.path.join(self._root, name), 'suivi.1'))
+        t = utils.fetch_suivi_stats(file)
         if t is None:
-            t = utils.fetch_slurm_stats(*utils.fetch_file(os.path.join(os.path.join(ROOT, name), 'slurm.*.out')))[0]
+            file, = utils.fetch_file(os.path.join(os.path.join(self._root, name), 'slurm.*.out'))
+            t = utils.fetch_slurm_stats(file)[0]
         return t
 
-    @staticmethod
-    def __call__(names, save_offset=False):
+    def get(self, names):
         names = names if isinstance(names, (list, tuple)) else [names]
-
-        if MODE == 'WALL':
-            x_data, y_data = bibarch.read_histo([os.path.join(ROOT, name) for name in names], *TAG)
-            lengths = [0, *np.flatnonzero(x_data.mask), len(x_data)]
-            offset = Creader.offset
+        x_data, y_data, restarts = bibarch.read_histo([os.path.join(self._root, name) for name in names], *self._tags,
+                                                      use_time=self._mode == 'TIME')
+        if self._mode == 'WALL':
+            lengths = [0, *restarts, len(x_data)]
+            offset = self._offset
             for i in range(len(names)):
-                t = Creader._get_wall_time(names[i])
-                x = x_data.data[lengths[i]:lengths[i + 1]]
-                x = t * (x + x[1] - 2 * x[0]) / (x[-1] + x[1] - 2 * x[0]) + offset
-                offset = x[-1]
-                x_data.data[lengths[i]:lengths[i + 1]] = x
-            if save_offset:
-                Creader.offset = offset
-        else:
-            x_data, y_data = bibarch.read_histo([os.path.join(ROOT, name) for name in names], *TAG,
-                                                use_time=MODE == 'TIME')
-        return x_data, y_data
+                t = self.get_wall_time(names[i])
+                x = x_data[lengths[i]:lengths[i + 1]]
+                x_data[lengths[i]:lengths[i + 1]] = t * (x + x[1] - 2 * x[0]) / (x[-1] + x[1] - 2 * x[0]) + offset
+                offset = x_data[lengths[i + 1] - 1]
+        return x_data, y_data, restarts
 
-    @staticmethod
-    def reset_offset(names):
+    def reset_offset(self, names):
         names = names if isinstance(names, (list, tuple)) else [names]
+        self._offset = sum(self.get_wall_time(name) for name in names)
 
-        Creader.offset = 0
-        for name in names:
-            t = Creader._get_wall_time(name)
-            x, y = bibarch.read_histo(os.path.join(ROOT, name), *TAG)
-            x = t * (x - x[0]) / (x[-1] - x[0]) + Creader.offset
-            x += (x[1] - x[0])
-            Creader.offset = x[-1]
-
-
-def plot_case(case, *args, save_offset=False, **kwargs):
-    x, y = Creader()(case, save_offset=save_offset)
-    ax.plot(x.data, y, *args, **kwargs)
-    ax.plot(x[x.mask].data, y[x.mask], 'k|', ms=10, mew=3)
+    def plot(self, case, *args, **kwargs):
+        x, y, restarts = self.get(case)
+        self._ax.plot(x, y, *args, **kwargs)
+        self._ax.plot(x[restarts], y[restarts], 'k|', ms=10, mew=3)
 
 
 if __name__ == '__main__':

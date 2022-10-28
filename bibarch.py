@@ -386,9 +386,19 @@ class BibarchReader:
 
 
 def read_histo(runs, category, group, name, use_time=False):
+    """
+    Read a set of "Explore's historique" files and return the expected data
+
+    :param str, list[str] runs: path to the files, may be remote
+    :param category:
+    :param group:
+    :param name:
+    :param bool use_time:
+    :return: the x and y data, and the restart indices
+    """
     x_data = np.array([])
     y_data = np.array([])
-    lengths = []
+    restarts = []
     g_x, n_x = ('DATES', 'Temps') if use_time else ('CYCLES', 'Ncycle')
     runs = runs if isinstance(runs, (list, tuple)) else [runs]
 
@@ -401,8 +411,5 @@ def read_histo(runs, category, group, name, use_time=False):
             bibarch_reader.read()
         x_data = np.concatenate((x_data, bibarch_reader['HORLOGE', g_x, n_x]))
         y_data = np.concatenate((y_data, bibarch_reader[category, group, name]))
-        lengths.append(len(x_data))
-    mask = np.zeros_like(x_data, dtype=bool)
-    for length in lengths[:-1]:
-        mask[length] = 1
-    return np.ma.array(x_data, mask=mask), y_data
+        restarts.append(len(x_data))
+    return x_data, y_data, restarts[:-1]
