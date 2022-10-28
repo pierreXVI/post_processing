@@ -141,6 +141,35 @@ class Plotter:
             self._current_color = (self._current_color + 1) % len(DEFAULT_COLORS)
         return [str(int(color[2 * i:2 * i + 2], base=16) / 255) for i in range(3)]
 
+    @staticmethod
+    def find_blocks(dataset, hints):
+        """
+        Find the blocks in a multiblock dataset
+
+        :param dataset:
+        :param str, list[str] hints: string or list of string, where each string is a substring of desired block names
+        :return: a dictionary where the keys are the indices of the blocks and the values their names
+        :rtype: dict
+        """
+        out = {}
+        dataset.UpdatePipeline()
+        hints = hints if isinstance(hints, (list, tuple)) else [hints]
+
+        if pvs.GetParaViewVersion().GetVersion() == 5.9:
+            info = dataset.GetDataInformation().GetCompositeDataInformation()
+            for i in range(info.GetNumberOfChildren()):
+                if any(h in info.GetName(i) for h in hints):
+                    out[i+1] = info.GetName(i)
+        else:
+            info = dataset.GetDataInformation()
+            for i in range(1, info.GetNumberOfDataSets() + 1):
+                if any(h in info.GetBlockName(i) for h in hints):
+                    out[i] = info.GetBlockName(i)
+
+        if not out:
+            raise ValueError("Cannot find block with {0}".format(', '.join(hints)))
+        return out
+
 
 class CpPlotter(Plotter):
     def __init__(self, view_size=(400, 400)):
@@ -159,24 +188,20 @@ class CpPlotter(Plotter):
         c2p = pvs.CellDatatoPointData(calc, ProcessAllArrays=0, CellDataArraytoprocess=['Cp'])
         plot = pvs.PlotData(c2p)
 
-        info = plot.GetDataInformation().DataInformation.GetCompositeDataInformation()
-        name = None
-        for i in range(info.GetNumberOfChildren()):
-            if 'AIRFOIL' in info.GetName(i):
-                name = 'Cp ({0})'.format(info.GetName(i))
-                pvs.Show(plot, self.view,
-                         UseIndexForXAxis=0,
-                         XArrayName='Points_X',
-                         CompositeDataSetIndex=[i + 1],
-                         SeriesVisibility=[name],
-                         SeriesLabel=[name, label],
-                         SeriesColor=[name, *self.str_color(color)],
-                         SeriesLineStyle=[name, '0'],
-                         SeriesMarkerStyle=[name, str(marker)],
-                         SeriesLineThickness=[name, '2'])
-                break
-        if name is None:
-            raise ValueError("Cannot find block 'AIRFOIL'")
+        blocks = self.find_blocks(plot, ['Extrados', 'Intrados'])
+        names = ['Cp ({0})'.format(blocks[i]) for i in blocks]
+        labels = utils.insert_repeat(names, '')
+        labels[1] = label
+        pvs.Show(plot, self.view,
+                 UseIndexForXAxis=0,
+                 XArrayName='Points_X',
+                 CompositeDataSetIndex=list(blocks),
+                 SeriesVisibility=names,
+                 SeriesLabel=labels,
+                 SeriesColor=utils.insert_repeat(names, *self.str_color(color)),
+                 SeriesLineStyle=utils.insert_repeat(names, '0'),
+                 SeriesMarkerStyle=utils.insert_repeat(names, str(marker)),
+                 SeriesLineThickness=utils.insert_repeat(names, '2'))
 
 
 class SpherePlotter(Plotter):
@@ -356,29 +381,19 @@ class SpherePlotter(Plotter):
                                                  BottomAxisTitle=bottom_axis_title, ViewSize=self.view_size)
             self.annotate_time(reader, self.surface_view, self.time, False)
 
-        plot.UpdatePipeline()
-        if pvs.GetParaViewVersion().GetVersion() == 5.9:
-            info = plot.GetDataInformation().GetCompositeDataInformation()
-            names = [info.GetName(i) for i in range(info.GetNumberOfChildren())]
-        else:
-            info = plot.GetDataInformation()
-            names = [info.GetBlockName(i + 1) for i in range(info.GetNumberOfDataSets())]
-        name = None
-        for i in range(len(names)):
-            if sphere_label in names[i]:
-                name = '{0} ({1})'.format(self.surface, names[i])
-                pvs.Show(plot, self.surface_view,
-                         UseIndexForXAxis=0, XArrayName=x_array_name,
-                         CompositeDataSetIndex=[i + 1],
-                         SeriesVisibility=[name],
-                         SeriesLabel=[name, label],
-                         SeriesColor=[name, *self.str_color(color)],
-                         SeriesLineStyle=[name, str(ls)],
-                         SeriesMarkerStyle=[name, str(marker)],
-                         SeriesMarkerSize=[name, '10'])
-                break
-        if name is None:
-            raise ValueError("Cannot find block 'SPHERE'")
+        block = self.find_blocks(plot, sphere_label)
+        for i in block:
+            name = '{0} ({1})'.format(self.surface, block[i])
+            pvs.Show(plot, self.surface_view,
+                     UseIndexForXAxis=0, XArrayName=x_array_name,
+                     CompositeDataSetIndex=[i],
+                     SeriesVisibility=[name],
+                     SeriesLabel=[name, label],
+                     SeriesColor=[name, *self.str_color(color)],
+                     SeriesLineStyle=[name, str(ls)],
+                     SeriesMarkerStyle=[name, str(marker)],
+                     SeriesMarkerSize=[name, '10'])
+            break
 
 
 class DPWCpPlotter(Plotter):
@@ -391,11 +406,7 @@ class DPWCpPlotter(Plotter):
                       time=False, progress=False):
         reader, render_view, _ = self.load_data(filename, ['P'], render_view=True)
 
-        blocs = []
-        info = reader.GetDataInformation().DataInformation.GetCompositeDataInformation()
-        for i in range(info.GetNumberOfChildren()):
-            if 'Wing' in info.GetName(i):
-                blocs.append(i + 1)
+        blocs = list(self.find_blocks(reader, 'Wing'))
         select = pvs.ExtractBlock(reader, BlockIndices=blocs)
         select_display = pvs.Show(select, render_view, Representation='Surface', ColorArrayName=['CELLS', 'P'])
         select_display.SetScalarBarVisibility(render_view, True)
