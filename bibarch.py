@@ -45,20 +45,14 @@ class BibarchReader:
             )
         )
 
-        # self._offset = collections.defaultdict(
-        #     lambda: collections.defaultdict(
-        #         lambda: collections.defaultdict(
-        #             int
-        #         )
-        #     )
-        # )
-
         self._filename = filename
         self._ff = self._nff = self._save_nff = None
 
         self.nblocks = int(subprocess.check_output(['grep', '-c', 'VARIABLES', self._filename]))
         self._i_variable = -1
         self._count = utils.Counter(self.nblocks, 'Merging')
+
+        self._done = False
 
     def _ch_version(self):
         self._read_val(UCHAR)  # version
@@ -279,6 +273,7 @@ class BibarchReader:
                 break
             self.chapter_readers[chapter]()
         self._ff.close()
+        self._done = True
 
     def read_and_merge_variable(self, verbose=False):
         self._ff = open(self._filename, 'rb')
@@ -322,6 +317,7 @@ class BibarchReader:
         self._nff.close()
         self._ff.close()
         subprocess.run(['mv', self._filename + '.TMP', self._filename])
+        self._done = True
 
     def _read_bloc_real(self, n):
         compression = self._read_val(UCHAR)
@@ -364,6 +360,8 @@ class BibarchReader:
         items = items if isinstance(items, (list, tuple)) else [items]
         out = self._data
         for item in items:
+            if self._done and item not in out:
+                raise KeyError(item)
             out = out[item]
         return out
 
@@ -378,6 +376,9 @@ class BibarchReader:
         return self._data.__iter__()
 
     def inspect_data(self, tab='    '):
+        if not self._done:
+            raise RuntimeError("The file has not been parsed yet!")
+
         for i in self:
             print(i)
             for j in self[i]:
