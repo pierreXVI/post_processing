@@ -173,6 +173,11 @@ class Plotter:
 
 class CpPlotter(Plotter):
     def __init__(self, view_size=(400, 400)):
+        """
+        Plot pressure coefficients from 2D airfoil cases
+
+        :param tuple(int, int) view_size: line view size used to display pressure coefficients
+        """
         super().__init__()
         self.view = self.create_view(
             pvs.CreateXYPlotView, LeftAxisTitle='$C_p$', LeftAxisUseCustomRange=1, LeftAxisRangeMinimum=2,
@@ -180,7 +185,19 @@ class CpPlotter(Plotter):
             BottomAxisRangeMaximum=1.05, ViewSize=view_size
         )
 
-    def register_plot(self, filename, p_inf, gamma, mach, label='Cp', color=None, marker=2):
+    def register_plot(self, filename, p_inf, gamma, mach, block_name, label='Cp', color=None, marker=2):
+        """
+        Displays the pressure coefficient for the case
+
+        :param str filename: case path
+        :param float p_inf: far-field pressure
+        :param float gamma: heat capacity ratio
+        :param float mach: Mach number
+        :param str, list[str] block_name: hint to identify the block corresponding to the airfoil
+        :param str label: label for the legend
+        :param str color: marker color
+        :param int marker: marker style (see Paraview)
+        """
         reader, _, _ = self.load_data(filename, ['P'])
 
         calc = pvs.Calculator(reader, AttributeType='Cell Data', ResultArrayName='Cp',
@@ -188,7 +205,7 @@ class CpPlotter(Plotter):
         c2p = pvs.CellDatatoPointData(calc, ProcessAllArrays=0, CellDataArraytoprocess=['Cp'])
         plot = pvs.PlotData(c2p)
 
-        blocks = self.find_blocks(plot, ['Extrados', 'Intrados'])
+        blocks = self.find_blocks(plot, block_name)
         names = ['Cp ({0})'.format(blocks[i]) for i in blocks]
         labels = utils.insert_repeat(names, '')
         labels[1] = label
