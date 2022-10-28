@@ -50,6 +50,8 @@ class HPlotter:
         return x_data, y_data, restarts
 
     def reset_offset(self, names):
+        if self._mode != 'WALL':
+            return
         names = names if isinstance(names, (list, tuple)) else [names]
         self._offset = sum(self.get_wall_time(name) for name in names)
 
