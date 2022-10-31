@@ -357,13 +357,18 @@ class BibarchReader:
             return [buffer.decode(), *self._read_str(n=n - 1)]
 
     def __getitem__(self, items):
-        items = items if isinstance(items, (list, tuple)) else [items]
-        out = self._data
-        for item in items:
-            if self._done and item not in out:
-                raise KeyError(item)
-            out = out[item]
-        return out
+        def _pop(_out, _items):
+            if not _items:
+                return _out
+            if isinstance(_items[0], (list, tuple)):
+                for _item in _items[0]:
+                    if self._done and _item not in _out:
+                        self.inspect_data()
+                        raise KeyError(_item)
+                return sum(_pop(_out[_item], _items[1:]) for _item in _items[0])
+            return _pop(_out[_items[0]], _items[1:])
+
+        return _pop(self._data, items if isinstance(items, (list, tuple)) else [items])
 
     def __setitem__(self, items, value):
         items = items if isinstance(items, (list, tuple)) else [items]

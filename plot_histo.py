@@ -23,7 +23,8 @@ class HPlotter:
 
         self._ax = axis
         self._ax.set_xlabel({'ITER': 'Iteration number', 'TIME': 'Simulation time', 'WALL': 'Wall time'}[self._mode])
-        self._ax.set_title(' '.join(self._tags))
+        self._ax.set_title(r'$\qquad$'
+                           .join([' + '.join(tag) if isinstance(tag, (list, tuple)) else tag for tag in self._tags]))
 
         self._offset = 0
 
@@ -72,7 +73,5 @@ if __name__ == '__main__':
     # ax.plot(*cread("BASE_NS/RUN_MTP"), label='NS MTP', lw=3)
     # ax.plot(*cread("BASE_NS/RUN_KEX"), label='NS KEX', lw=3)
 
-    ax.set_xlabel({'ITER': 'Iteration number', 'TIME': 'Simulation time', 'WALL': 'Wall time'}[MODE])
-    ax.set_title(' '.join(TAG))
     ax.legend()
     plt.show()
