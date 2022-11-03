@@ -3,7 +3,7 @@ import os
 import numpy as np
 import paraview.simple as pvs
 
-import utils
+from . import utils
 
 DEFAULT_COLORS = ['1f77b4', 'ff7f0e', '2ca02c', 'd62728', '9467bd', '8c564b', 'e377c2', '7f7f7f', 'bcbd22', '17becf']
 
@@ -72,17 +72,13 @@ class Plotter:
         :param float duration: duration in seconds of the animation
         :param bool block: if True, block at the end of the animation
         """
-        for filename in self.data:
-            if self.data[filename][1] is not None:
-                self.data[filename][1].ResetCamera()
-
         animation_scene = pvs.GetAnimationScene()
         animation_scene.UpdateAnimationUsingDataTimeSteps()
         animation_scene.PlayMode = 'Real Time'
         animation_scene.Duration = duration
         animation_scene.Play()
         if block:
-            pvs.Interact()
+            pvs.GetActiveView().GetInteractor().Start()
 
     @staticmethod
     def scale_display(display):
@@ -159,7 +155,7 @@ class Plotter:
             info = dataset.GetDataInformation().GetCompositeDataInformation()
             for i in range(info.GetNumberOfChildren()):
                 if any(h in info.GetName(i) for h in hints):
-                    out[i+1] = info.GetName(i)
+                    out[i + 1] = info.GetName(i)
         else:
             info = dataset.GetDataInformation()
             for i in range(1, info.GetNumberOfDataSets() + 1):
