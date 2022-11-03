@@ -168,17 +168,20 @@ class Plotter:
 
 
 class CpPlotter(Plotter):
-    def __init__(self, view_size=(400, 400)):
+    def __init__(self, view_size=(400, 400), xlabel='$x$', ylabel='$C_p$', title=''):
         """
         Plot pressure coefficients from 2D airfoil cases
 
         :param tuple(int, int) view_size: line view size used to display pressure coefficients
+        :param str xlabel:
+        :param str ylabel:
+        :param str title:
         """
         super().__init__()
         self.view = self.create_view(
-            pvs.CreateXYPlotView, LeftAxisTitle='$C_p$', LeftAxisUseCustomRange=1, LeftAxisRangeMinimum=2,
-            LeftAxisRangeMaximum=-1, BottomAxisTitle='$x$', BottomAxisUseCustomRange=1, BottomAxisRangeMinimum=-0.05,
-            BottomAxisRangeMaximum=1.05, ViewSize=view_size
+            pvs.CreateXYPlotView, LeftAxisTitle=ylabel, LeftAxisUseCustomRange=1, LeftAxisRangeMinimum=1.4,
+            LeftAxisRangeMaximum=-1.2, BottomAxisTitle=xlabel, BottomAxisUseCustomRange=1, BottomAxisRangeMinimum=-0.05,
+            BottomAxisRangeMaximum=1.05, ViewSize=view_size, ChartTitle=title
         )
 
     def register_plot(self, filename, p_inf, gamma, mach, block_name, label='Cp', color=None, marker=2):

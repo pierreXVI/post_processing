@@ -1,4 +1,4 @@
-import pvlib
+from postprocess import pvlib
 
 if __name__ == '__main__':
     plotter = pvlib.CpPlotter()
