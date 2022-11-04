@@ -202,13 +202,12 @@ class CpPlotter(Plotter):
         calc = pvs.Calculator(reader, AttributeType='Cell Data', ResultArrayName='Cp',
                               Function="((P / {0}) - 1) * 2 / ({1} * {2}^2)".format(p_inf, gamma, mach))
         c2p = pvs.CellDatatoPointData(calc, ProcessAllArrays=0, CellDataArraytoprocess=['Cp'])
-        plot = pvs.PlotData(c2p)
 
-        blocks = self.find_blocks(plot, block_name)
+        blocks = self.find_blocks(c2p, block_name)
         names = ['Cp ({0})'.format(blocks[i]) for i in blocks]
         labels = utils.insert_repeat(names, '')
         labels[1] = label
-        pvs.Show(plot, self.view,
+        pvs.Show(c2p, self.view,
                  UseIndexForXAxis=0,
                  XArrayName='Points_X',
                  CompositeDataSetIndex=list(blocks),
@@ -390,17 +389,16 @@ class SpherePlotter(Plotter):
             calc = c2p
             x_array_name = 'Points_X'
             bottom_axis_title = r'$x$'
-        plot = pvs.PlotData(calc)
 
         if self.surface_view is None:
             self.surface_view = self.create_view(pvs.CreateXYPlotView, LeftAxisTitle='${0}$'.format(self.surface),
                                                  BottomAxisTitle=bottom_axis_title, ViewSize=self.view_size)
             self.annotate_time(reader, self.surface_view, self.time, False)
 
-        block = self.find_blocks(plot, sphere_label)
+        block = self.find_blocks(calc, sphere_label)
         for i in block:
             name = '{0} ({1})'.format(self.surface, block[i])
-            pvs.Show(plot, self.surface_view,
+            pvs.Show(calc, self.surface_view,
                      UseIndexForXAxis=0, XArrayName=x_array_name,
                      CompositeDataSetIndex=[i],
                      SeriesVisibility=[name],
@@ -446,8 +444,7 @@ class DPWCpPlotter(Plotter):
             calc = pvs.Calculator(calc, AttributeType='Point Data', ResultArrayName='X/c',
                                   Function="(coordsX - {0}) / ({1} - {0})".format(bounds[0], bounds[1]))
             c2p = pvs.CellDatatoPointData(calc, ProcessAllArrays=0, CellDataArraytoprocess=['Cp'])
-            plot = pvs.PlotData(c2p)
-            plot.UpdatePipeline()
+            c2p.UpdatePipeline()
 
             if self.line_view is None:
                 self.line_view = self.create_view(
@@ -455,10 +452,10 @@ class DPWCpPlotter(Plotter):
                     LeftAxisRangeMaximum=-1, BottomAxisTitle='$x/c$', BottomAxisUseCustomRange=1,
                     BottomAxisRangeMinimum=-0.05, BottomAxisRangeMaximum=1.05, ViewSize=self.line_view_size
                 )
-            info = plot.GetDataInformation().DataInformation.GetCompositeDataInformation()
+            info = c2p.GetDataInformation().DataInformation.GetCompositeDataInformation()
             names = ['Cp ({0})'.format(info.GetName(i)) for i in range(info.GetNumberOfChildren())]
             pvs.Show(
-                plot, self.line_view, UseIndexForXAxis=0, XArrayName='X/c',
+                c2p, self.line_view, UseIndexForXAxis=0, XArrayName='X/c',
                 CompositeDataSetIndex=list(range(1, len(names) + 1)),
                 SeriesVisibility=names,
                 SeriesLabel=utils.insert_repeat(names, label),
