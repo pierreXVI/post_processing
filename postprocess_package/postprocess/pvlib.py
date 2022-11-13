@@ -65,6 +65,16 @@ class Plotter:
         self.data[filename] = reader, r_view, l_view
         return self.data[filename]
 
+    def get_views(self, filename):
+        """
+        Returns the views associated with the case
+
+        :param str filename: requested case path
+        :return: the render and line views
+        :rtype: tuple[Any, Any]
+        """
+        return self.data[_fetch_ensight_data(filename, [])][1:]
+
     def draw(self, duration, block=False, reset_camera=False):
         """
         Draws all views associated with the Plotter object
@@ -126,7 +136,6 @@ class Plotter:
         :return:
         """
         view = pv_creator(*args, **kwargs)
-        pvs.AssignViewToLayout(view)
         return view
 
     def str_color(self, color=None):
@@ -514,7 +523,7 @@ class COVOPlotter(Plotter):
 
         if label:
             text = pvs.Text(Text=label)
-            pvs.Show(text, render_view, 'TextSourceRepresentation', WindowLocation='UpperCenter', Interactivity=0)
+            pvs.Show(text, render_view, 'TextSourceRepresentation', WindowLocation='Upper Center', Interactivity=0)
 
         if r_gas is not None:
             self.load_data(filename, ['V', 'T'])
