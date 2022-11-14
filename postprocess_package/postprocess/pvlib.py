@@ -168,7 +168,7 @@ class Plotter:
 
 
 class CpPlotter(Plotter):
-    def __init__(self, view_size=(400, 400), xlabel='$x$', ylabel='$C_p$', title=''):
+    def __init__(self, view_size=(400, 400), xlabel='$x/c$', ylabel='$C_p$', title=''):
         """
         Plot pressure coefficients from 2D airfoil cases
 
@@ -198,18 +198,21 @@ class CpPlotter(Plotter):
         :param int marker: marker style (see Paraview)
         """
         reader, _, _ = self.load_data(filename, ['P'])
-
+        blocks = self.find_blocks(reader, block_name)
+        select = pvs.ExtractBlock(reader, Selectors=['/Root/{0}'.format(blocks[i].replace(' ; ', '')) for i in blocks])
+        select.UpdatePipeline()
         calc = pvs.Calculator(reader, AttributeType='Cell Data', ResultArrayName='Cp',
                               Function="((P / {0}) - 1) * 2 / ({1} * {2}^2)".format(p_inf, gamma, mach))
         c2p = pvs.CellDatatoPointData(calc, ProcessAllArrays=0, CellDataArraytoprocess=['Cp'])
+        calc = pvs.Calculator(c2p, AttributeType='Point Data', ResultArrayName='x/c',
+                              Function="(coordsX - {0}) / ({1} - {0})".format(*select.GetDataInformation().GetBounds()))
 
-        blocks = self.find_blocks(c2p, block_name)
         names = ['Cp ({0})'.format(blocks[i]) for i in blocks]
         labels = utils.insert_repeat(names, '')
         labels[1] = label
-        pvs.Show(c2p, self.view,
+        pvs.Show(calc, self.view,
                  UseIndexForXAxis=0,
-                 XArrayName='Points_X',
+                 XArrayName='x/c',
                  CompositeDataSetIndex=list(blocks),
                  SeriesVisibility=names,
                  SeriesLabel=labels,
@@ -420,8 +423,8 @@ class DPWCpPlotter(Plotter):
                       time=False, progress=False):
         reader, render_view, _ = self.load_data(filename, ['P'], render_view=True)
 
-        blocs = list(self.find_blocks(reader, 'Wing'))
-        select = pvs.ExtractBlock(reader, BlockIndices=blocs)
+        blocs = self.find_blocks(reader, 'Wing')
+        select = pvs.ExtractBlock(reader, BlockIndices=list(blocs))
         select_display = pvs.Show(select, render_view, Representation='Surface', ColorArrayName=['CELLS', 'P'])
         select_display.SetScalarBarVisibility(render_view, True)
         self.scale_display(select_display)
@@ -452,8 +455,7 @@ class DPWCpPlotter(Plotter):
                     LeftAxisRangeMaximum=-1, BottomAxisTitle='$x/c$', BottomAxisUseCustomRange=1,
                     BottomAxisRangeMinimum=-0.05, BottomAxisRangeMaximum=1.05, ViewSize=self.line_view_size
                 )
-            info = c2p.GetDataInformation().DataInformation.GetCompositeDataInformation()
-            names = ['Cp ({0})'.format(info.GetName(i)) for i in range(info.GetNumberOfChildren())]
+            names = ['Cp ({0})'.format(blocs[i]) for i in blocs]
             pvs.Show(
                 c2p, self.line_view, UseIndexForXAxis=0, XArrayName='X/c',
                 CompositeDataSetIndex=list(range(1, len(names) + 1)),
