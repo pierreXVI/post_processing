@@ -65,13 +65,27 @@ class Plotter:
         self.data[filename] = reader, r_view, l_view
         return self.data[filename]
 
-    def draw(self, duration, block=False):
+    def get_views(self, filename):
+        """
+        Returns the views associated with the case
+
+        :param str filename: requested case path
+        :return: the render and line views
+        :rtype: tuple[Any, Any]
+        """
+        return self.data[_fetch_ensight_data(filename, [])][1:]
+
+    def draw(self, duration, block=False, reset_camera=False):
         """
         Draws all views associated with the Plotter object
 
         :param float duration: duration in seconds of the animation
         :param bool block: if True, block at the end of the animation
+        :param bool reset_camera: if True, reset the camera
         """
+        if reset_camera:
+            for view in pvs.GetViews():
+                pvs.ResetCamera(view)
         animation_scene = pvs.GetAnimationScene()
         animation_scene.UpdateAnimationUsingDataTimeSteps()
         animation_scene.PlayMode = 'Real Time'
@@ -122,7 +136,6 @@ class Plotter:
         :return:
         """
         view = pv_creator(*args, **kwargs)
-        pvs.AssignViewToLayout(view)
         return view
 
     def str_color(self, color=None):
@@ -475,7 +488,20 @@ class COVOPlotter(Plotter):
         super().__init__()
 
     def register_plot(self, filename, cell_array, view_size=(400, 400), contour=0,
-                      time=False, progress=False, label='', gamma=1.4, r=None):
+                      time=False, progress=False, label='', gamma=1.4, r_gas=None):
+        """
+        Displays a field for the case
+
+        :param str filename: case path
+        :param str cell_array: value to display
+        :param tuple(int, int) view_size:
+        :param int contour: number of contour lines
+        :param bool time: flag to annotate the time as a text
+        :param bool progress: flag to annotate the time as a progression bar
+        :param str label: label for the legend
+        :param float gamma: heat capacity ratio
+        :param float r_gas: specific gas constant, shows the CFL number if given
+        """
         reader, render_view, _ = self.load_data(filename, [cell_array], render_view=True, rvs=view_size)
 
         if contour > 0:
@@ -486,19 +512,19 @@ class COVOPlotter(Plotter):
                 c2p = reader
             ctr = pvs.Contour(c2p, ContourBy=['POINTS', cell_array],
                               Isosurfaces=np.linspace(*c2p.PointData.GetArray(0).GetRange(), contour + 2)[1:-1])
-            print(c2p.PointData.GetArray(0).GetRange())
             display = pvs.Show(ctr, render_view, Representation='Surface', ColorArrayName=['POINTS', cell_array])
         else:
-            display = pvs.Show(reader, render_view, Representation='Surface', ColorArrayName=['POINTS', cell_array])
-        display.LookupTable = pvs.GetColorTransferFunction(cell_array, display, separate=True)
-        display.RescaleTransferFunctionToDataRange(False, True)
+            if cell_array in reader.CellArrays:
+                display = pvs.Show(reader, render_view, Representation='Surface', ColorArrayName=['CELLS', cell_array])
+            else:
+                display = pvs.Show(reader, render_view, Representation='Surface', ColorArrayName=['POINTS', cell_array])
         display.SetScalarBarVisibility(render_view, True)
 
         if label:
             text = pvs.Text(Text=label)
-            pvs.Show(text, render_view, 'TextSourceRepresentation', WindowLocation='UpperCenter', Interactivity=0)
+            pvs.Show(text, render_view, 'TextSourceRepresentation', WindowLocation='Upper Center', Interactivity=0)
 
-        if r is not None:
+        if r_gas is not None:
             self.load_data(filename, ['V', 'T'])
             vtk_data = pvs.servermanager.Fetch(reader)
             try:
@@ -517,7 +543,7 @@ class COVOPlotter(Plotter):
                     try:
                         t = block.GetCellData().GetArray('T').GetValue(p)
                         v = block.GetCellData().GetArray('V').GetValue(p)
-                        cfl = (np.sqrt(gamma * r * t) + v) * dt / dx
+                        cfl = (np.sqrt(gamma * r_gas * t) + v) * dt / dx
                     except AttributeError:
                         rho = block.GetPointData().GetArray('rho').GetValue(p)
                         pres = block.GetPointData().GetArray('rho').GetValue(p)
@@ -525,7 +551,7 @@ class COVOPlotter(Plotter):
                         v = block.GetPointData().GetArray('v').GetValue(p)
                         cfl = (np.sqrt(gamma * pres / rho) + np.sqrt(u * u + v * v)) * dt / dx
                     text = pvs.Text(Text='CFL = {0:.3f}'.format(cfl))
-                    pvs.Show(text, render_view, 'TextSourceRepresentation', WindowLocation='UpperRightCorner',
+                    pvs.Show(text, render_view, 'TextSourceRepresentation', WindowLocation='Upper Right Corner',
                              Interactivity=0)
 
         self.annotate_time(reader, render_view, time, progress)

@@ -366,6 +366,9 @@ class BibarchReader:
                         self.inspect_data()
                         raise KeyError(_item)
                 return sum(_pop(_out[_item], _items[1:]) for _item in _items[0])
+            if self._done and _items[0] not in _out:
+                self.inspect_data()
+                raise KeyError(_items[0])
             return _pop(_out[_items[0]], _items[1:])
 
         return _pop(self._data, items if isinstance(items, (list, tuple)) else [items])
