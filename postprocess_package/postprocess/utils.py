@@ -4,6 +4,7 @@ import shutil
 import subprocess
 
 import dateutil.parser
+import numpy as np
 
 import config
 
@@ -26,7 +27,7 @@ def fetch_file(filename):
         if not found:
             print('\r', end='', flush=True)
             raise FileNotFoundError("Cannot find {0} on {1} or {2}"
-                                    .format(filename, ', '.join(('localhost', *config.HOSTS[:-1])), config.HOSTS[-1]))
+                                    .format(filename, ', '.join(config.HOSTS), 'localhost'))
         print()
 
     return glob.glob(tmp_filename)
@@ -105,3 +106,33 @@ class Counter:
         print(self.string.format(int(bar_length * i / self.n) * '-', i / self.n, bar_length=bar_length), end='')
         if i == self.n:
             print()
+
+
+def annotate_slope(axis, s, base=0.2, dx=0.0, dy=0.0, transpose=False):
+    xm, xp, ym, yp = np.inf, -np.inf, np.inf, -np.inf
+    for line in axis.get_lines():
+        if line.get_xdata().size and line.get_ydata().size:
+            xm = min(xm, np.min(line.get_xdata()))
+            xp = max(xp, np.max(line.get_xdata()))
+            ym = min(ym, np.min(line.get_ydata()))
+            yp = max(yp, np.max(line.get_ydata()))
+
+    line_x = np.array([np.power(xm, base) * np.power(xp, 1 - base), xp])
+    line_y = np.array([ym, ym * np.power(line_x[1] / line_x[0], s)])
+    if dx:
+        line_x *= np.power(xm / xp, dx * (1 - base))
+    if dy:
+        line_y *= np.power(yp / ym, dy * (1 - base * s * np.log(xp / xm) / np.log(yp / ym)))
+
+    axis.plot(line_x, line_y, 'k')
+    if not transpose:
+        axis.plot([line_x[0], line_x[1], line_x[1]], [line_y[0], line_y[0], line_y[1]], 'k-.')
+        axis.annotate(1, xy=(np.sqrt(line_x[0] * line_x[1]), line_y[0]), xytext=(0, -5 - plt.rcParams['font.size']),
+                      textcoords='offset pixels')
+        axis.annotate(s, xy=(line_x[1], np.sqrt(line_y[0] * line_y[1])), xytext=(10, 0), textcoords='offset pixels',
+                      ha='left')
+    else:
+        axis.plot([line_x[0], line_x[0], line_x[1]], [line_y[0], line_y[1], line_y[1]], 'k-.')
+        axis.annotate(1, xy=(np.sqrt(line_x[0] * line_x[1]), line_y[1]), xytext=(0, 10), textcoords='offset pixels')
+        axis.annotate(s, xy=(line_x[0], np.sqrt(line_y[0] * line_y[1])), xytext=(-10, 0), textcoords='offset pixels',
+                      ha='right')
