@@ -109,7 +109,17 @@ class Counter:
             print()
 
 
-def annotate_slope(axis, s, base=0.2, dx=0.0, dy=0.0, transpose=False):
+def annotate_slope(axis, s, base=0.2, dx=0.0, dy=0.0, transpose=False, pad=None):
+    """
+
+    :param plt.Axis axis:
+    :param float s: slope value
+    :param float base:
+    :param float dx:
+    :param float dy:
+    :param bool transpose: if True, flip the triangle
+    :param float pad: text padding
+    """
     xm, xp, ym, yp = np.inf, -np.inf, np.inf, -np.inf
     for line in axis.get_lines():
         if line.get_xdata().size and line.get_ydata().size:
@@ -125,15 +135,18 @@ def annotate_slope(axis, s, base=0.2, dx=0.0, dy=0.0, transpose=False):
     if dy:
         line_y *= np.power(yp / ym, dy * (1 - base * s * np.log(xp / xm) / np.log(yp / ym)))
 
-    axis.plot(line_x, line_y, 'k')
+    line, = axis.plot(line_x, line_y, 'k')
+    if not pad:
+        pad = line.get_linewidth() / 2 + min(max(2, line.get_linewidth() / 2), plt.rcParams['font.size'])
     if not transpose:
         axis.plot([line_x[0], line_x[1], line_x[1]], [line_y[0], line_y[0], line_y[1]], 'k-.')
-        axis.annotate(1, xy=(np.sqrt(line_x[0] * line_x[1]), line_y[0]), xytext=(0, -5 - plt.rcParams['font.size']),
-                      textcoords='offset pixels')
-        axis.annotate(s, xy=(line_x[1], np.sqrt(line_y[0] * line_y[1])), xytext=(10, 0), textcoords='offset pixels',
-                      ha='left')
+        axis.annotate(1, xy=(np.sqrt(line_x[0] * line_x[1]), line_y[0]),
+                      ha='center', va='top', xytext=(0, -pad), textcoords='offset points')
+        axis.annotate(s, xy=(line_x[1], np.sqrt(line_y[0] * line_y[1])),
+                      ha='left', va='center', xytext=(pad, 0), textcoords='offset points')
     else:
         axis.plot([line_x[0], line_x[0], line_x[1]], [line_y[0], line_y[1], line_y[1]], 'k-.')
-        axis.annotate(1, xy=(np.sqrt(line_x[0] * line_x[1]), line_y[1]), xytext=(0, 10), textcoords='offset pixels')
-        axis.annotate(s, xy=(line_x[0], np.sqrt(line_y[0] * line_y[1])), xytext=(-10, 0), textcoords='offset pixels',
-                      ha='right')
+        axis.annotate(1, xy=(np.sqrt(line_x[0] * line_x[1]), line_y[1]),
+                      ha='center', va='bottom', xytext=(0, pad), textcoords='offset points')
+        axis.annotate(s, xy=(line_x[0], np.sqrt(line_y[0] * line_y[1])),
+                      ha='right', va='center', xytext=(-pad, 0), textcoords='offset points')
