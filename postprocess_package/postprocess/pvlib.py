@@ -268,7 +268,7 @@ class SpherePlotter(Plotter):
         :param str cell_array: value to display
         :param str component: value component for vector arrays
         :param tuple(int, int) view_size:
-        :param bool stream: flag to show streamlines
+        :param bool, int stream: flag to show streamlines
         :param bool shock: flag to show the shock
         """
         reader, render_view, _ = self.load_data(filename, [cell_array, 'V'] if stream else [cell_array],
@@ -280,11 +280,11 @@ class SpherePlotter(Plotter):
         self.scale_display(reader_display)
 
         if stream:
-            stream = pvs.StreamTracer(reader, SeedType='Line', MaximumStreamlineLength=0.01, Vectors=['CELLS', 'V'])
-            stream.SeedType.Point1 = [-0.00635, 0.0, 0.0]
-            stream.SeedType.Point2 = [-0.007, 0.001, 0.0]
-            stream.SeedType.Resolution = stream if isinstance(stream, int) else 10
-            pvs.Show(stream, render_view, Representation='Surface')
+            streamtracer = pvs.StreamTracer(reader, SeedType='Line', MaximumStreamlineLength=0.01, Vectors=['CELLS', 'V'])
+            streamtracer.SeedType.Point1 = [-0.00635, 0.0, 0.0]
+            streamtracer.SeedType.Point2 = [-0.007, 0.001, 0.0]
+            streamtracer.SeedType.Resolution = stream if type(stream) == int else 10
+            pvs.Show(streamtracer, render_view, Representation='Surface')
 
         self.annotate_time(reader, render_view, self.time, self.progress)
 
