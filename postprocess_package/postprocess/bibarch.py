@@ -426,13 +426,14 @@ def read_histo(runs, category, group, name, use_time=False):
 
 class HistoPlotter:
 
-    def __init__(self, axis, tags, mode='ITER', root=''):
+    def __init__(self, axis, tags, mode='ITER', root='', plot_restarts=True):
         """
 
         :param matplotlib.axis._axis.Axis axis:
         :param str mode: 'ITER', 'TIME' or 'WALL'
         :param str root: path to prepend to case files
         :param tuple(str, str, str) tags:
+        :param bool plot_restarts: if True, plot a marker at restarts
         """
 
         self._tags = tags
@@ -445,6 +446,7 @@ class HistoPlotter:
                            .join([' + '.join(tag) if isinstance(tag, (list, tuple)) else tag for tag in self._tags]))
 
         self._offset = 0
+        self._plot_restarts = plot_restarts
 
     def get_wall_time(self, name):
         file, = utils.fetch_file(os.path.join(os.path.join(self._root, name), 'suivi.1'))
@@ -477,7 +479,8 @@ class HistoPlotter:
     def plot(self, case, *args, **kwargs):
         x, y, restarts = self.get(case)
         self._ax.plot(x, y, *args, **kwargs)
-        self._ax.plot(x[restarts], y[restarts], 'k|', ms=10, mew=3)
+        if self._plot_restarts:
+            self._ax.plot(x[restarts], y[restarts], 'k|', ms=10, mew=3)
 
     def change_root(self, new_root):
         self._root = new_root
