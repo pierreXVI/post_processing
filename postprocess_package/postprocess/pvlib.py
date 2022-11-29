@@ -58,9 +58,9 @@ class Plotter:
             reader.CellArrays = list(set(reader.CellArrays).union(set(cell_arrays)))
 
         if render_view and r_view is None:
-            r_view = self.create_view(pvs.CreateRenderView, InteractionMode='2D', ViewSize=rvs)
+            r_view = pvs.CreateRenderView(InteractionMode='2D', ViewSize=rvs)
         if line_view and l_view is None:
-            l_view = self.create_view(pvs.CreateXYPlotView, ViewSize=lvs)
+            l_view = pvs.CreateXYPlotView(ViewSize=lvs)
 
         self.data[filename] = reader, r_view, l_view
         return self.data[filename]
@@ -125,19 +125,6 @@ class Plotter:
         if progress:
             pvs.Show(pvs.TimeStepProgressBar(inp), view)
 
-    @staticmethod
-    def create_view(pv_creator, *args, **kwargs):
-        """
-        Creates a view with the given arguments and adds it to the layout
-
-        :param pv_creator:
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        view = pv_creator(*args, **kwargs)
-        return view
-
     def str_color(self, color=None):
         """
         Convert a color to a list of the three Paraview color coefficients
@@ -191,11 +178,10 @@ class CpPlotter(Plotter):
         :param str title:
         """
         super().__init__()
-        self.view = self.create_view(
-            pvs.CreateXYPlotView, LeftAxisTitle=ylabel, LeftAxisUseCustomRange=1, LeftAxisRangeMinimum=1.4,
-            LeftAxisRangeMaximum=-1.2, BottomAxisTitle=xlabel, BottomAxisUseCustomRange=1, BottomAxisRangeMinimum=-0.05,
-            BottomAxisRangeMaximum=1.05, ViewSize=view_size, ChartTitle=title
-        )
+        self.view = pvs.CreateXYPlotView(LeftAxisTitle=ylabel, LeftAxisUseCustomRange=1, LeftAxisRangeMinimum=1.4,
+                                         LeftAxisRangeMaximum=-1.2, BottomAxisTitle=xlabel, BottomAxisUseCustomRange=1,
+                                         BottomAxisRangeMinimum=-0.05, BottomAxisRangeMaximum=1.05, ViewSize=view_size,
+                                         ChartTitle=title)
 
     def register_plot(self, filename, p_inf, gamma, mach, block_name, label='Cp', color=None, marker=2):
         """
@@ -280,7 +266,8 @@ class SpherePlotter(Plotter):
         self.scale_display(reader_display)
 
         if stream:
-            streamtracer = pvs.StreamTracer(reader, SeedType='Line', MaximumStreamlineLength=0.01, Vectors=['CELLS', 'V'])
+            streamtracer = pvs.StreamTracer(reader, SeedType='Line', MaximumStreamlineLength=0.01,
+                                            Vectors=['CELLS', 'V'])
             streamtracer.SeedType.Point1 = [-0.00635, 0.0, 0.0]
             streamtracer.SeedType.Point2 = [-0.007, 0.001, 0.0]
             streamtracer.SeedType.Resolution = stream if type(stream) == int else 10
@@ -360,8 +347,8 @@ class SpherePlotter(Plotter):
             if not 0 <= theta <= 90:
                 raise ValueError("Angle value outside [0, 90]")
             if self.line_view is None:
-                self.line_view = self.create_view(pvs.CreateXYPlotView, LeftAxisTitle='${0}$'.format(self.ray),
-                                                  BottomAxisTitle='$r$', ViewSize=self.view_size)
+                self.line_view = pvs.CreateXYPlotView(LeftAxisTitle='${0}$'.format(self.ray), BottomAxisTitle='$r$',
+                                                      ViewSize=self.view_size)
                 self.annotate_time(reader, self.line_view, self.time, False)
 
             plot = pvs.PlotOnIntersectionCurves(c2p, SliceType='Plane')
@@ -407,8 +394,8 @@ class SpherePlotter(Plotter):
             bottom_axis_title = r'$x$'
 
         if self.surface_view is None:
-            self.surface_view = self.create_view(pvs.CreateXYPlotView, LeftAxisTitle='${0}$'.format(self.surface),
-                                                 BottomAxisTitle=bottom_axis_title, ViewSize=self.view_size)
+            self.surface_view = pvs.CreateXYPlotView(LeftAxisTitle='${0}$'.format(self.surface),
+                                                     BottomAxisTitle=bottom_axis_title, ViewSize=self.view_size)
             self.annotate_time(reader, self.surface_view, self.time, False)
 
         block = self.find_blocks(calc, sphere_label)
@@ -463,8 +450,8 @@ class DPWCpPlotter(Plotter):
             c2p.UpdatePipeline()
 
             if self.line_view is None:
-                self.line_view = self.create_view(
-                    pvs.CreateXYPlotView, LeftAxisTitle='$C_p$', LeftAxisUseCustomRange=1, LeftAxisRangeMinimum=2,
+                self.line_view = pvs.CreateXYPlotView(
+                    LeftAxisTitle='$C_p$', LeftAxisUseCustomRange=1, LeftAxisRangeMinimum=2,
                     LeftAxisRangeMaximum=-1, BottomAxisTitle='$x/c$', BottomAxisUseCustomRange=1,
                     BottomAxisRangeMinimum=-0.05, BottomAxisRangeMaximum=1.05, ViewSize=self.line_view_size
                 )
