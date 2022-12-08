@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import paraview.simple as pvs
+from vtkmodules.numpy_interface import dataset_adapter
 
 from . import utils
 
@@ -75,7 +76,8 @@ class Plotter:
         """
         return self.data[_fetch_ensight_data(filename, [])][1:]
 
-    def draw(self, duration, block=False, reset_camera=False):
+    @staticmethod
+    def draw(duration, block=False, reset_camera=False):
         """
         Draws all views associated with the Plotter object
 
@@ -568,3 +570,24 @@ class JetPlotter(Plotter):
         display.LookupTable = pvs.GetColorTransferFunction('Rho', display, separate=True)
         display.RescaleTransferFunctionToDataRange(False, True)
         display.SetScalarBarVisibility(render_view, True)
+
+
+def get_point_data(inp, name, blocks, time=np.inf):
+    found = False
+    for i in range(inp.GetPointDataInformation().GetNumberOfArrays()):
+        if inp.GetPointDataInformation()[i].GetName() == name:
+            found = True
+            break
+    if not found:
+        inp = pvs.CellDatatoPointData(inp, ProcessAllArrays=0, CellDataArraytoprocess=[name])
+
+    inp.UpdatePipeline(time=time)
+    vtk_data = pvs.servermanager.Fetch(inp)
+    data, coordinates = [], []
+    for b in blocks:
+        bloc = dataset_adapter.WrapDataObject(vtk_data.GetBlock(b - 1))
+        for i in range(bloc.PointData.GetNumberOfArrays()):
+            if bloc.PointData[i].GetName() == name:
+                data.append(bloc.PointData[i])
+                coordinates.append(np.array([[*bloc.GetPoint(p)] for p in range(bloc.GetNumberOfPoints())]))
+    return np.concatenate(coordinates), np.concatenate(data)
