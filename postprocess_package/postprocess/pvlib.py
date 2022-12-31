@@ -572,7 +572,7 @@ class JetPlotter(Plotter):
         display.SetScalarBarVisibility(render_view, True)
 
 
-def get_point_data(inp, name, blocks, time=np.inf):
+def get_point_data(inp, name, blocks=None, time=np.inf):
     found = False
     for i in range(inp.GetPointDataInformation().GetNumberOfArrays()):
         if inp.GetPointDataInformation()[i].GetName() == name:
@@ -584,6 +584,9 @@ def get_point_data(inp, name, blocks, time=np.inf):
     inp.UpdatePipeline(time=time)
     vtk_data = pvs.servermanager.Fetch(inp)
     data, coordinates = [], []
+    if blocks is None:
+        bloc = dataset_adapter.WrapDataObject(vtk_data.GetBlock(0))
+        return bloc.GetPoints().Arrays[0], bloc.PointData[name].Arrays[0]
     for b in blocks:
         bloc = dataset_adapter.WrapDataObject(vtk_data.GetBlock(b - 1))
         for i in range(bloc.PointData.GetNumberOfArrays()):
