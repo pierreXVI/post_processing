@@ -21,7 +21,7 @@ def fetch_file(filename):
         found = False
         for h in config.HOSTS:
             print("\rLoading {0} from {1}".format(filename, h), end='', flush=True)
-            if not subprocess.run(['scp', '{0}:{1}'.format(h, filename), tmp_root],
+            if not subprocess.run(['scp', '-r', '{0}:{1}'.format(h, filename), tmp_root],
                                   stderr=subprocess.DEVNULL).returncode:
                 found = True
                 break
