@@ -585,8 +585,12 @@ def get_point_data(inp, name, blocks=None, time=np.inf):
     vtk_data = pvs.servermanager.Fetch(inp)
     data, coordinates = [], []
     if blocks is None:
-        bloc = dataset_adapter.WrapDataObject(vtk_data.GetBlock(0))
-        return bloc.GetPoints().Arrays[0], bloc.PointData[name].Arrays[0]
+        try:
+            bloc = dataset_adapter.WrapDataObject(vtk_data.GetBlock(0))
+            return bloc.Points().Arrays[0], bloc.PointData[name].Arrays[0]
+        except AttributeError:
+            bloc = dataset_adapter.WrapDataObject(vtk_data)
+            return bloc.Points, bloc.PointData[name]
     for b in blocks:
         bloc = dataset_adapter.WrapDataObject(vtk_data.GetBlock(b - 1))
         for i in range(bloc.PointData.GetNumberOfArrays()):
